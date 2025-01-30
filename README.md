@@ -1,6 +1,6 @@
 # AI Media Processing Pipeline
 
-A Next.js & Effect powered AI pipeline that uploads, processes, and extracts metadata from images and PDFs using OpenAI, Tesseract.js, and AWS S3—fully async with Redis queue & PostgreSQL storage.
+A Next.js & Effect powered AI pipeline that uploads, processes, and extracts metadata from images and PDFs using OpenAI, Tesseract.js, and AWS S3—fully async with Redis queue & Postgres storage.
 
 ## Architecture
 
