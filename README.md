@@ -1,36 +1,121 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Media Processing Pipeline
+
+A Next.js & Effect powered AI pipeline that uploads, processes, and extracts metadata from images and PDFs using OpenAI, Tesseract.js, and AWS S3—fully async with Redis queue & PostgreSQL storage.
+
+## Architecture
+
+```mermaid
+flowchart TD;
+  User((User)) -->|Uploads Files| API[Next.js API: /api/upload]
+  API -->|Stores Files| S3[AWS S3]
+  API -->|Creates DB Record| DB[(PostgreSQL)]
+  API -->|Adds Job to Queue| Redis[Redis Queue]
+
+  subgraph Effect TS Worker
+    Worker[Job Processor] -->|Fetch Next Job| Redis
+    Worker -->|Download File| S3
+    Worker -->|Process File| AI[AI Processing]
+    AI -->|OpenAI Vision<br/>Tesseract.js OCR<br/>OpenAI Whisper| FileType
+    Worker -->|Save Results| DB
+    Worker -->|Mark Job Complete| DB
+  end
+
+  User -->|Checks Status| API2[Next.js API: /api/status]
+  API2 -->|Reads Status| DB
+  User -->|Fetches Results| API3[Next.js API: /api/result]
+  API3 -->|Returns Data| DB
+```
+
+## Tech Stack
+
+| Tech          | Purpose                   |
+| ------------- | ------------------------- |
+| Bun           | Runtime                   |
+| Next.js 15    | Frontend                  |
+| Tailwind v4   | Styling                   |
+| Effect TS     | Async processing pipeline |
+| AWS S3        | Object storage            |
+| Neon          | Postgres DB               |
+| Redis         | Caching & job queue       |
+| OpenAI Vision | Image analysis            |
+| Tesseract.js  | PDF OCR                   |
 
 ## Getting Started
 
-First, run the development server:
+1. Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun install
+```
+
+2. Set up environment variables:
+
+```bash
+cp .env.example .env
+```
+
+3. Run the development server:
+
+```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Required environment variables:
 
-## Learn More
+```bash
+# Database
+DATABASE_URL=
 
-To learn more about Next.js, take a look at the following resources:
+# Redis
+REDIS_URL=
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# AWS
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
+S3_BUCKET_NAME=
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# OpenAI
+OPENAI_API_KEY=
+```
 
-## Deploy on Vercel
+## API Routes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `POST /api/upload` - Upload files
+- `GET /api/status/:jobId` - Check processing status
+- `GET /api/result/:jobId` - Retrieve processing results
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Development
+
+```bash
+# Run development server
+bun dev
+
+# Run tests
+bun test
+
+# Run type checking
+bun type-check
+
+# Run linting
+bun lint
+```
+
+## Deployment
+
+The application is designed to be deployed on Vercel with the following services:
+
+| Provider | Service      |
+| -------- | ------------ |
+| Vercel   | Frontend     |
+| Neon     | Postgres     |
+| Upstash  | Redis        |
+| AWS S3   | File Storage |
+
+## License
+
+MIT
