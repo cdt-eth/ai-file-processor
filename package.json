@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.758.0",
+    "@privy-io/react-auth": "^2.6.2",
+    "@privy-io/server-auth": "^1.18.12",
     "clsx": "^2.1.1",
     "effect": "^3.12.7",
     "lucide-react": "^0.474.0",
