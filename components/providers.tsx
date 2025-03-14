@@ -1,6 +1,7 @@
 'use client';
 
 import { PrivyProvider } from '@privy-io/react-auth';
+import { Toaster } from 'sonner';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -15,6 +16,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         },
       }}
     >
+      <Toaster position="top-right" richColors />
       {children}
     </PrivyProvider>
   );

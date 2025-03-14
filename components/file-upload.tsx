@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { UploadIcon } from "lucide-react";
 import { cn, getUserDisplayName } from "@/lib/utils";
 import { usePrivy } from "@privy-io/react-auth";
+import { toast } from "sonner";
 
 interface UploadResponse {
   success: boolean;
@@ -31,6 +32,7 @@ export function FileUpload() {
   async function uploadFile(file: File) {
     if (!authenticated) {
       console.log("Upload attempted without authentication");
+      toast.error("Please sign in to upload files");
       setUploadResult({ success: false, error: "Please sign in to upload files" });
       return;
     }
@@ -65,12 +67,16 @@ export function FileUpload() {
       }
 
       setUploadResult(data);
+      // Show success toast instead of displaying the success message in the UI
+      toast.success(`File "${data.fileName}" uploaded successfully!`);
       console.log("Upload successful:", data);
     } catch (error) {
       console.error("Upload error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      toast.error(errorMessage);
       setUploadResult({ 
         success: false, 
-        error: error instanceof Error ? error.message : "Unknown error occurred" 
+        error: errorMessage
       });
     } finally {
       setIsUploading(false);
@@ -133,26 +139,9 @@ export function FileUpload() {
         )}
       </label>
 
-      {uploadResult && (
-        <div className={`mt-4 p-4 rounded-md ${uploadResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-          {uploadResult.success ? (
-            <div>
-              <p className="font-semibold">Upload successful!</p>
-              <p>File: {uploadResult.fileName}</p>
-              {uploadResult.url && (
-                <a 
-                  href={uploadResult.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline"
-                >
-                  View File
-                </a>
-              )}
-            </div>
-          ) : (
-            <p>{uploadResult.error || "Upload failed"}</p>
-          )}
+      {uploadResult && !uploadResult.success && (
+        <div className="mt-4 p-4 rounded-md bg-red-50 text-red-700">
+          <p>{uploadResult.error || "Upload failed"}</p>
         </div>
       )}
     </div>
