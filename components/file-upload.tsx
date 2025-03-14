@@ -1,36 +1,77 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UploadIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getUserDisplayName } from "@/lib/utils";
+import { usePrivy } from "@privy-io/react-auth";
 
 interface UploadResponse {
-  message: string;
-  fileName: string;
+  success: boolean;
+  imageId?: string;
+  url?: string;
+  fileName?: string;
+  error?: string;
 }
 
 export function FileUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadResult, setUploadResult] = useState<UploadResponse | null>(null);
+  const { authenticated, getAccessToken, user } = usePrivy();
+
+  // Log authentication status changes
+  useEffect(() => {
+    console.log("Auth status:", authenticated ? "Authenticated" : "Not authenticated");
+    if (authenticated && user) {
+      console.log("User:", getUserDisplayName(user));
+      console.log("User details:", user);
+    }
+  }, [authenticated, user]);
 
   async function uploadFile(file: File) {
+    if (!authenticated) {
+      console.log("Upload attempted without authentication");
+      setUploadResult({ success: false, error: "Please sign in to upload files" });
+      return;
+    }
+
     setIsUploading(true);
+    setUploadResult(null);
+    console.log("Starting upload for file:", file.name);
 
     try {
       const formData = new FormData();
       formData.append("file", file);
 
+      // Get the authentication token
+      console.log("Getting access token...");
+      const token = await getAccessToken();
+      console.log("Token received:", token ? "✓" : "✗");
+
+      console.log("Sending upload request to API...");
       const response = await fetch("/api/upload", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Upload failed");
-
       const data: UploadResponse = await response.json();
+      console.log("API response:", data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Upload failed");
+      }
+
+      setUploadResult(data);
       console.log("Upload successful:", data);
     } catch (error) {
       console.error("Upload error:", error);
+      setUploadResult({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Unknown error occurred" 
+      });
     } finally {
       setIsUploading(false);
     }
@@ -87,7 +128,33 @@ export function FileUpload() {
             ? "Uploading..."
             : "Drop your files here or click to upload"}
         </h1>
+        {!authenticated && (
+          <p className="text-red-500 mt-2">Please sign in to upload files</p>
+        )}
       </label>
+
+      {uploadResult && (
+        <div className={`mt-4 p-4 rounded-md ${uploadResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+          {uploadResult.success ? (
+            <div>
+              <p className="font-semibold">Upload successful!</p>
+              <p>File: {uploadResult.fileName}</p>
+              {uploadResult.url && (
+                <a 
+                  href={uploadResult.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  View File
+                </a>
+              )}
+            </div>
+          ) : (
+            <p>{uploadResult.error || "Upload failed"}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
